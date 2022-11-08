@@ -8,6 +8,8 @@ title MATHEUS ECKE MEDEIROS RA: 22004797
     segundo     DB          ' SEGUNDO NUMERO : $'
     operador    DB          ' OPERADOR (+ - * /): $'
     invalido    DB          ' OPERADOR INVALIDO!$'
+    continuar   DB          ' DESEJA CONTINUAR? (DIGITE S SE SIM): $'
+    encerrar    DB          ' FIM DO PROGRAMA!$'
     N1          DB          ?
     N2          DB          ?
     OP          DB          ?
@@ -15,6 +17,7 @@ title MATHEUS ECKE MEDEIROS RA: 22004797
 
     MAIN PROC
 
+        INICIO:
         CALL LIMPA_TELA
         
         MOV AX, @DATA           ; move o segmento data para AX
@@ -25,8 +28,7 @@ title MATHEUS ECKE MEDEIROS RA: 22004797
         ; le primeiro numero
         LEA DX, primeiro
         CALL PRINT_STRING
-        MOV AH, 01
-        INT 21H
+        CALL INPUT_CHAR
         MOV N1, AL
         
         CALL PULA_LINHA         ; pula 2 linhas
@@ -34,8 +36,7 @@ title MATHEUS ECKE MEDEIROS RA: 22004797
         ; le segundo numero
         LEA DX, segundo
         CALL PRINT_STRING
-        MOV AH, 01
-        INT 21H
+        CALL INPUT_CHAR
         MOV N2, AL
         
         CALL PULA_LINHA         ; pula 2 linhas
@@ -43,8 +44,7 @@ title MATHEUS ECKE MEDEIROS RA: 22004797
         ; le o operador
         LEA DX, operador
         CALL PRINT_STRING
-        MOV AH, 01
-        INT 21H
+        CALL INPUT_CHAR
         MOV OP, AL
 
         ; verifica qual foi o operador digitado
@@ -86,7 +86,10 @@ title MATHEUS ECKE MEDEIROS RA: 22004797
         
         ; encerra o programa
         FIM:
+            CALL CONTINUACAO
             CALL PULA_LINHA
+            LEA DX, encerrar
+            CALL PRINT_STRING
             MOV AH, 4CH
             INT 21H
 
@@ -188,14 +191,13 @@ title MATHEUS ECKE MEDEIROS RA: 22004797
         SUB BL, 30H
     
         VEZES:
-            SHR BH, 1
-            JNC PAR
-
-            ADD CL, BL
+            SHR BH, 1           ; desloca o segundo numero e testa seu carry
+            JNC PAR             ; se houver carry o numero eh impar
+            ADD CL, BL          ; armazena o resultado em CL
 
             PAR:
-                SHL BL, 1
-                CMP BH, 0
+                SHL BL, 1       ; multiplica por 2
+                CMP BH, 0       ; verifica se o segundo numero chegou em 0
                 JNZ VEZES
 
             ADD CL, 30H
@@ -220,7 +222,7 @@ title MATHEUS ECKE MEDEIROS RA: 22004797
 
             ; testa para numero maior ou igual a 10, e faz o jump caso ele seja menor
             CMP CL, 3AH
-            JL MENORQUE10
+            JB MENORQUE10
 
             ; imprime os dois digitos do numero separadamente
             CALL DOIS_DIGITOS
@@ -332,6 +334,15 @@ title MATHEUS ECKE MEDEIROS RA: 22004797
         RET
 
     PRINT_STRING ENDP
+
+    INPUT_CHAR PROC
+
+        MOV AH, 01
+        INT 21H
+
+        RET
+
+    INPUT_CHAR ENDP
     
     PULA_LINHA PROC
 
@@ -375,11 +386,39 @@ title MATHEUS ECKE MEDEIROS RA: 22004797
 
     DOIS_DIGITOS ENDP
 
+    CONTINUACAO PROC
+
+        CALL PULA_LINHA
+
+        LEA DX, continuar       ; verifica se o usuario deseja continuar
+        CALL PRINT_STRING
+        CALL INPUT_CHAR
+
+        CMP AL, 'S'             ; continua caso o usuario digite S
+        JE CONTINUE
+        CMP AL, 's'             ; continua caso o usuario digite s
+        JE CONTINUE
+        JMP ENCERRA
+
+        CONTINUE:
+            JMP INICIO
+
+        ENCERRA:
+        RET
+
+    CONTINUACAO ENDP
+
     LIMPA_TELA PROC
         
         MOV AL, 03H
         MOV AH, 00H
-        INT 10h
+        INT 10H
+
+        MOV CX, 02H 
+        MOV DH, 1
+        MOV DL, 1 
+        MOV AH, 02H 
+        INT 10H 
 
         RET
 
